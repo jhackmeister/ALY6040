@@ -1,0 +1,151 @@
+---
+title: "Module 1 - EDA"
+subtitle: "ALY 6040"
+date: "16 April 2025"
+author: "Jeff Hackmeister"
+format:
+  pdf:
+    colorlinks: true
+execute:
+  warning: false
+  message: false
+---
+
+\newpage
+
+# Introduction
+
+For this Exploratory Data Analysis, I will be working with the Diamonds dataset from the ggplot2 library, which is part of the larger Tidyverse library. According to the document ion available from the ggplot2 library, this dataset contains price and descriptive attributes of almost 54,000 diamonds. I was interested in this dataset because the thought of diamonds for most people invites images of engagement rings and elaborate jewelry, but the vast majority of diamonds (by volume) are sold for use in manufacturing or other less glamorous uses. I was curious to see how the different descriptive aspects of a diamond would influence the price of each diamond.
+
+To begin the analysis, I will load Tidyverse as well as the Patchwork library which allows for a cleaner presentation of multiple plots within this document. Then I will read into R the diamonds dataset.
+
+```{r}
+#| message: false
+#| warning: false
+library("tidyverse")
+library("patchwork")
+data <- diamonds
+```
+
+For more details on the the specifics of the the dataset, I will use the str function.
+
+```{r}
+str(data)
+```
+
+From this we can see that there are 10 variables in the dataset for 53,940 observations. The descriptive variables include numeric values for:
+
+-   carat (weight)
+
+-   depth (total depth percentage)
+
+-   table (width of the top of the diamond relative to the widest point)
+
+-   X, Y, and Z (length, width, and depth
+
+-   price (measured in US dollars as an integer)
+
+As well as factor variables for:
+
+-   cut (quality)
+
+-   color
+
+-   clarity
+
+To confirm there are no missing values, I will use the colSums function with is.na
+
+```{r}
+colSums(is.na(data))
+```
+
+which confirms there are no missing values, meaning I will not need to decide on a methodology for replacing null values.
+
+# Initial Exploration
+
+To explore the shape and distribution of the variables, I will create a few simple plots. Starting with histograms for carat and price.
+
+```{r}
+p1 <- ggplot(data, aes(x=carat)) + 
+  geom_histogram(bins=10, fill = "cadetblue1", color = "black") + 
+  labs(
+    title = "Carat Distribution"
+  ) +
+  theme_minimal()
+p2 <- ggplot(data, aes(x=price)) + 
+  geom_histogram(bins=10, fill = "coral", color = "black") + 
+  labs(
+    title = "Price Distribution"
+  ) +
+  theme_minimal()
+p1 | p2
+```
+
+These demonstrate expected relationships, the bulk of the diamonds listed are below 1.5 carars and under \$2,500. These are less likely to end up in jewelry but are vital parts of the diamond trade. I also wanted to explore the relationship between these variables with a scatter plot.
+
+```{r}
+ggplot(data, aes(x=carat, y=price)) +
+  geom_point() +
+  labs(title = "Diamond Price and Carat") +
+  theme_minimal()
+```
+
+This shows some interesting stratification of price at the 1.5, 2, and 2.5 carats - clearly prices are set around those thresholds.
+
+For cut, color and clarity we'll use bar charts to look at their distributions.
+
+```{r}
+p3 <- ggplot(data, aes(x=cut)) +
+  geom_bar(fill = "red") +
+  labs(title = "Distrubution of Cut") +
+  theme_minimal()
+
+p4 <- ggplot(data, aes(x=color)) +
+  geom_bar(fill = "yellow") +
+  labs(title = "Distrubution of Color") +
+  theme_minimal()
+
+p5 <- ggplot(data, aes(x=clarity)) +
+  geom_bar(fill = "blue") +
+  labs(title = "Distrubution of Cut") +
+  theme_minimal()
+
+(p3 | p4) / (p5 | plot_spacer())
+```
+
+Her we can see a relatively normal distribution for color and clarity, but a large tilt in cut towards "ideal". To explore the relationship between these variables and price, I used a series of boxplots.
+
+```{r}
+p6 <- ggplot(diamonds, aes(x = cut, y = price)) +
+  geom_boxplot() +
+  theme_minimal()
+
+# Boxplot of price by color
+p7 <- ggplot(diamonds, aes(x = color, y = price)) +
+  geom_boxplot() +
+  theme_minimal()
+
+# Boxplot of price by clarity
+p8 <- ggplot(diamonds, aes(x = clarity, y = price)) +
+  geom_boxplot() +
+  theme_minimal()
+
+# Arrange in a 2x2 grid with one empty space
+(p6 | p7) / (p8 | patchwork::plot_spacer())
+```
+
+These plots show that while the interquartile ranges are fairly tight across all variables and categories, price is not dictated by these variables alone as seen by the large numbers of exterior values.
+
+# Takeaways
+
+From this EDA, I have found that is no missing data from the dataset. Additionally, while there are no traditional outliers, it is clear that while carat, cut, color, and clarity all impact the price of a diamond, there are likely other variables not included in this dataset that cause larger disparities in price. Going forward with this study, I would do more statistical tests to determine the strength of the relationship between these variables and could proceed to produce a price prediction model to estimate the sales price of a diamond given the descriptive variables available.
+
+\newpage
+
+# References
+
+\[1\] Prices of over 50,000 round cut diamonds — diamonds. (n.d.). Ggplot2.Tidyverse.org. https://ggplot2.tidyverse.org/reference/diamonds.html
+
+\[2\] The Composer of Plots. (n.d.). Patchwork.data-Imaginist.com. https://patchwork.data-imaginist.com/
+
+\[3\] Quarto Reference. Retrieved from https://quarto.org/docs/reference/formats/pdf.html
