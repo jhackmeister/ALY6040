@@ -85,33 +85,3 @@ pred <- predict(object=tree,mushrooms_test[-1],type="class")
 #Calculating accuracy
 t <- table(mushrooms_test$class,pred) 
 confusionMatrix(t) 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
