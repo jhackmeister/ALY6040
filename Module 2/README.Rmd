@@ -1,0 +1,13 @@
+---
+title: "README"
+output: html_document
+date: "2025-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Module 2 Practice
+
+This analysis is centered around building a model to predict the class of mushrooms (edible or poisonous) from a dataset provided in an excel spreadsheet. There were 8,124 observations of 23 variables. The initial R code was provided by the instructor, the description of the workflow in the Quarto document is my own work.
