@@ -11,7 +11,7 @@ editor: visual
 
 # Introduction
 
-For this project, we will be working with a dataset we discovered on Kaggle – The “**Polycystic Ovary Syndrome PCOS”.** This dataset speaks about women with Polycystic Ovary Syndrome and is generated according to the Rotterdam criteria. It sparked our interest because it is a prevalent hormonal disorder that can significantly impact women’s health and quality of life. 
+For this project, we will be working with a dataset we discovered on Kaggle – The “**Polycystic Ovary Syndrome PCOS”.** This dataset speaks about women with Polycystic Ovary Syndrome and is generated according to the Rotterdam criteria. It sparked our interest because it is a prevalent hormonal disorder that can significantly impact women’s health and quality of life. According to the World Health Organization PCOS represents the leading cause of infertility worldwide and nearly 70% of women go undiagnosed. By better understanding the common characteristics of PCOS patients, medical professionals will be better able to target testing efforts and provide treatment. There is no current cure for PCOS, but there are a variety of treatments available to improve symptoms and increase quality of life.
 
 The goal is to explore how various physiological indicators — such as BMI, hormone levels, and menstrual regularity — relate to the presence of PCOS. I hope to identify patterns that may help in early detection or risk assessment. 
 
@@ -76,7 +76,7 @@ n_diag <- data %>%
   filter(data$PCOS_diag == "No")
 ```
 
-## Variable Distribution 
+## Variable Distribution
 
 We will be investigating the relationship between the variables and a PCOS diagnosis, it is important to understand the distributions of each variable. W
 
@@ -148,8 +148,16 @@ ac_plot_n <- ggplot(n_diag, aes(x = AC_Count)) +
   plot_layout(guides = "collect")
 ```
 
+## Dataset Analysis and Next Steps
+
+Fortunately, this dataset appears to be fairly clean. We've done some renaming of variables for ease of use but we did not have to work around missing values and there do not appear to be any outliers due to data entry or other errors. This gives us a great starting point for further study. Our next steps should be to further segment the data to look for corralations between natural breaks in the sample population and positive PCOS diagnosis. We will also build a predictive model to determine which combination of factors would lead to a likely positive diagnosis. This model can help direct testing and treatment programs, helping to direct limited resources to likely patients and increase the detection rate.
+
 \newpage
 
 # References
 
 Kottarathil, P. (2020, July 11). Polycystic ovary syndrome (PCOS). Kaggle. https://www.kaggle.com/datasets/prasoonkottarathil/polycystic-ovary-syndrome-pcos
+
+World Health Organization. (2025, February 7). *Polycystic ovary syndrome*. World Health Organization; World Health Organization. https://www.who.int/news-room/fact-sheets/detail/polycystic-ovary-syndrome
+
+‌
