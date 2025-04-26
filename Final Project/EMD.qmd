@@ -148,6 +148,35 @@ ac_plot_n <- ggplot(n_diag, aes(x = AC_Count)) +
   plot_layout(guides = "collect")
 ```
 
+Finally, we'll examine the relationship between each of the numeric variables either a positive or negative PCOS diagnosis. To do this, we'll use the violin plots available in ggplopt2 (part of the tidyverse package), combined with a traditional box plot. This will demonstrate not only the median and quartile information from the box plot, but also the density of the observations at each value.
+
+```{r}
+bmi_pcos <- ggplot(data, aes(x = PCOS_diag, y = BMI, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+ac_pcos <- ggplot(data, aes(x = PCOS_diag, y = AC_Count, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+age_pcos <- ggplot(data, aes(x = PCOS_diag, y = Age, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+t_pcos <- ggplot(data, aes(x = PCOS_diag, y = T_Level, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+(age_pcos + bmi_pcos) / (t_pcos + ac_pcos) + 
+  plot_layout(guides = "collect")
+```
+
+From these results, we do not see noticeable differences for age and BMI, but testosterone and especially Antral Follicle values do vary considerably for those with a positive diagnosis. This will certainly be area of further research in this project.
+
 ## Dataset Analysis and Next Steps
 
 Fortunately, this dataset appears to be fairly clean. We've done some renaming of variables for ease of use but we did not have to work around missing values and there do not appear to be any outliers due to data entry or other errors. This gives us a great starting point for further study. Our next steps should be to further segment the data to look for corralations between natural breaks in the sample population and positive PCOS diagnosis. We will also build a predictive model to determine which combination of factors would lead to a likely positive diagnosis. This model can help direct testing and treatment programs, helping to direct limited resources to likely patients and increase the detection rate.
