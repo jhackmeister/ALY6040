@@ -9,8 +9,11 @@ editor: visual
 \newpage
 
 ```{r}
+#| message: false
+#| warning: false
 library(e1071)
 library(arules)
+library(caret)
 data <- read.csv("https://raw.githubusercontent.com/jhackmeister/ALY6040/refs/heads/main/Final%20Project/final_project_clean.csv")
 ```
 
@@ -20,32 +23,60 @@ str(data)
 
 ```{r}
 # Cleaning
-data <- subset(data, select = -X)
 data$PCOS_diag <- as.factor(data$PCOS_diag)
 data$Men_Irrg <- as.factor(data$Men_Irrg)
-write.csv(data, "final_project_clean.csv")
 ```
 
 ```{r}
-any_na <- apply(data, 2, function(x) any(is.na(x)))
-print(any_na)
-
-any_nan <- apply(data, 2, function(x) any(is.nan(x)))
-print(any_nan)
-
-any_inf <- apply(data, 2, function(x) any(is.infinite(x)))
-print(any_inf)
+model <- svm(PCOS_diag ~ ., data = data)
 ```
 
 ```{r}
-x <- subset(data, select = -PCOS_diag)
-y <- data$PCOS_diag
-model <- svm(x, y)
+# Print model summary
+summary(model)
+
+# See which observations are support vectors
+head(model$index)
 ```
 
 ```{r}
-pred <- fitted(model)
+predictions <- predict(model, data)
 
-# Check accuracy:
-table(pred, y)
+head(predictions)
+
+table(Actual = data$PCOS_diag, Predicted = predictions)
+```
+
+```{r}
+set.seed(123)
+train_index <- createDataPartition(data$PCOS_diag, p = 0.8, list = FALSE)
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+
+model_train <- svm(PCOS_diag ~ ., data = train_data)
+test_pred <- predict(model_train, test_data)
+confusionMatrix(test_pred, test_data$PCOS_diag)
+```
+
+```{r}
+# First, ensure your PCOS_diag variable is a proper factor
+data$PCOS_diag <- as.factor(data$PCOS_diag)
+
+# Create distance matrix using only numeric features
+# Extract only numeric columns for distance calculation
+numeric_features <- data[, sapply(data, is.numeric)]
+
+# Create distance matrix
+dist_matrix <- dist(numeric_features)
+
+# Apply MDS to get 2D coordinates
+mds_coords <- cmdscale(dist_matrix)
+
+# Create the plot
+plot(mds_coords,
+     col = as.integer(data$PCOS_diag),
+     pch = c("o", "+")[1:nrow(data) %in% model$index + 1],
+     main = "SVM Classification of PCOS Diagnosis",
+     xlab = "MDS Dimension 1", 
+     ylab = "MDS Dimension 2")
 ```
