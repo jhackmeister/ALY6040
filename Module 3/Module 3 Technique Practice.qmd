@@ -1,0 +1,51 @@
+---
+title: "Module 3 Technique Practice"
+subtitle: "ALY 6015"
+date: "26 April 2025"
+format: pdf
+editor: visual
+---
+
+\newpage
+
+```{r}
+library(e1071)
+library(arules)
+data <- read.csv("https://raw.githubusercontent.com/jhackmeister/ALY6040/refs/heads/main/Final%20Project/final_project_clean.csv")
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+# Cleaning
+data <- subset(data, select = -X)
+data$PCOS_diag <- as.factor(data$PCOS_diag)
+data$Men_Irrg <- as.factor(data$Men_Irrg)
+write.csv(data, "final_project_clean.csv")
+```
+
+```{r}
+any_na <- apply(data, 2, function(x) any(is.na(x)))
+print(any_na)
+
+any_nan <- apply(data, 2, function(x) any(is.nan(x)))
+print(any_nan)
+
+any_inf <- apply(data, 2, function(x) any(is.infinite(x)))
+print(any_inf)
+```
+
+```{r}
+x <- subset(data, select = -PCOS_diag)
+y <- data$PCOS_diag
+model <- svm(x, y)
+```
+
+```{r}
+pred <- fitted(model)
+
+# Check accuracy:
+table(pred, y)
+```

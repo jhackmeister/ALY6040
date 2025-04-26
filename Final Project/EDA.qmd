@@ -1,7 +1,7 @@
 ---
 title: "Final Project EDA"
 subtitle: "ALY 6015"
-date: "24 February 2025"
+date: "26 April 2025"
 author: "Janica St Ville and Jeff Hackmeister"
 format: docx
 editor: visual
@@ -190,3 +190,7 @@ Kottarathil, P. (2020, July 11). Polycystic ovary syndrome (PCOS). Kaggle. https
 World Health Organization. (2025, February 7). *Polycystic ovary syndrome*. World Health Organization; World Health Organization. https://www.who.int/news-room/fact-sheets/detail/polycystic-ovary-syndrome
 
 ‌
+
+```{r}
+write.csv(data, "final_project_clean.csv")
+```
