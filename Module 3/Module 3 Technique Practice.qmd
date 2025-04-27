@@ -1,6 +1,9 @@
 ---
-title: "Module 3 Technique Practice"
+title: |
+  Module 3 Technique Practice \
+  Suport Vector Machine
 subtitle: "ALY 6015"
+author: "Jeff Hackmeister"
 date: "26 April 2025"
 format: pdf
 editor: visual
@@ -8,46 +11,106 @@ editor: visual
 
 \newpage
 
+# Introduction
+
+Working with the Polycystic Ovary Syndrome PCOS dataset from Kaggle, we will be using a support vector machine (SVM) for a classification exercise to model the diagnosis of Polycystic Ovary Syndrome (PCOS), a prevalent but severely under diagosed hormonal disorder that can significantly impact women’s health and quality of life. This data was collected from patients seen at 10 different hospitals across Kerala, India.
+
+To begin, we'll load our needed libraries and dataset. While the data originally came from Kaggle, I am using a cleaned version from a previous project from the dataset that I have loaded to GitHub.
+
 ```{r}
 #| message: false
 #| warning: false
+#| label: libraries and data
 library(e1071)
 library(arules)
 library(caret)
-data <- read.csv("https://raw.githubusercontent.com/jhackmeister/ALY6040/refs/heads/main/Final%20Project/final_project_clean.csv")
+library(tidyverse)
+data <- read.csv(
+  "https://raw.githubusercontent.com/jhackmeister/ALY6040/refs/heads/main/Final%20Project/final_project_clean.csv")
 ```
 
+To confirm our data, we'll use the str function.
+
 ```{r}
+#| label: view the data 
 str(data)
 ```
 
-```{r}
-# Cleaning
-data$PCOS_diag <- as.factor(data$PCOS_diag)
-data$Men_Irrg <- as.factor(data$Men_Irrg)
-```
+And we can see that we have 3,000 observations of 7 variables. Our variables are
+
+-   X - this a row count number and is not needed for this study, we'll drop it
+
+-   Age - the age of the participant in the study
+
+-   BMI - body mass index is the ratio of body weight to height
+
+-   Men_Irrg - an indication of menstrual irregularities, this should be converted to a factor datatype
+
+-   T-Level - the patient's measured testosterone levels
+
+-   AC_Count - count of patient's antral follicles
+
+-   PCOS_diag - indication of a positive or negative PCOS diagnosis, this should also be converted to a factor
+
+We'll perform the identified cleaning procedures and look at the first few lines of the dataset.
 
 ```{r}
+#| label: data cleaning 
+data <- data %>% select(-X)
+data$PCOS_diag <- as.factor(data$PCOS_diag)
+data$Men_Irrg <- as.factor(data$Men_Irrg)
+head(data)
+```
+
+# Running the model 
+
+Next, we will use the svm function from the e1071 library to build an SVM model for our dataset.
+
+```{r}
+#| label: fit the model  
 model <- svm(PCOS_diag ~ ., data = data)
 ```
 
-```{r}
-# Print model summary
-summary(model)
+With the model created, we can review the model using the summary function.
 
-# See which observations are support vectors
+```{r}
+#| label: model results
+summary(model)
 head(model$index)
 ```
 
+The C-classification indicates that we are using classification, rather than regression, SVM. The radial kernel indicates that the model will incorporate non-linear relationships between the provided variables. The cost 1 is the default for the function and the 2 classes indicate our two outcomes, a Yes or No for a PCOS diagnosis. The even split between support vectors, 32 for both yes and no, is a indications of a clear delineation in the data.
+
+## Prediction 
+
+With the data fit to the model, we will move to making predictions from the model. To do so, we'll use the predict function from the arules library.
+
 ```{r}
+#| label: predictions from the model
+#| echo: true
 predictions <- predict(model, data)
 
 head(predictions)
 
+# Confusion Matrix 
 table(Actual = data$PCOS_diag, Predicted = predictions)
 ```
 
+The head function shows the predictions made for the first six observations, predicting no for all observations except number 4.
+
+The confusion matrix shows the summarized results for the entire data set. There were 2,399 true negatives (the negative prediction was correct) with 1 false negative. There were also 598 true positive (a correct positive prediction) with 2 false positives. These are very strong results for our model.
+
 ```{r}
+#| label: accuracy  
+(2399 +598) / (3000)
+```
+
+## Train/Test
+
+To further examine the performance of the model, we'll split the dataset in test and train sets, using 80% of the data for training and leaving 20% for testing. Next, we'll again use svm to fit a model to the training data and then use the resulting model to make prediction from the held over test data.
+
+```{r}
+#| label: test/train model and prediction 
 set.seed(123)
 train_index <- createDataPartition(data$PCOS_diag, p = 0.8, list = FALSE)
 train_data <- data[train_index, ]
@@ -58,11 +121,15 @@ test_pred <- predict(model_train, test_data)
 confusionMatrix(test_pred, test_data$PCOS_diag)
 ```
 
-```{r}
-# First, ensure your PCOS_diag variable is a proper factor
-data$PCOS_diag <- as.factor(data$PCOS_diag)
+Once again, we see very strong results for the model, with 99.83% accuracy and a 95% confidence interval of 99.07 to 100%. There were also 0 false negatives in this test - which is very important for this particular subject matter.
 
-# Create distance matrix using only numeric features
+## Visualization 
+
+Next, we will use the dist function from arules to create a distance matrix. This measures the distance between the data points in a multidimensional space. To do so, we must first limit the data to only numerical values. Once we have those distances calculated, we'll use the cmdscale function to convert those values into 2D coordinates that we can plot.
+
+```{r}
+#| label: distance matrix and visualization 
+
 # Extract only numeric columns for distance calculation
 numeric_features <- data[, sapply(data, is.numeric)]
 
@@ -79,4 +146,52 @@ plot(mds_coords,
      main = "SVM Classification of PCOS Diagnosis",
      xlab = "MDS Dimension 1", 
      ylab = "MDS Dimension 2")
+legend("bottomright", 
+       legend = c("Non-PCOS", "PCOS", "Regular Point", "Support Vector"),
+       col = c(1, 2, 1, 1),
+       pch = c("o", "o", "o", "+"),
+       cex = 0.8)
 ```
+
+The resulting plot shows the distribution of the observations from the dataset. Positive diagnoses are in red, while negatives are in black. The 64 support vectors identified in the model are indicated by a + while the other observations are shown with a o. Despite the strong results we saw in the model above, there is not as clean of a delineiation in the data from this plot. To look for a cleaner separation, we'll look at each of the variable pairs independently.
+
+```{r}
+#| label: scatter plot matrix
+pairs(numeric_features, col = as.integer(data$PCOS_diag), pch = 19)
+```
+
+This gives us a much better view into which variable combination provides the best distinction in diagnosis outcomes. Age has the weakest predictive influence, while BMI, testosterone and AC count produce much cleaner results.
+
+# Conclusion and Next Steps
+
+The results of our SVM model were very strong, indicating that these variables are highly useful in predicting a PCOS diagnosis. Age appears to be of limited use in the model, which makes some logical sense given the relatively narrow age band included in a study of reproductive adult women, 18 to 44 in this dataset. Ideally, we could use this model on a new dataset collected from a different geographical area to test the effectiveness on different demographic samples. It would also be quite helpful to add additional demographic variables such as race, socioeconomic status, and access to regular healthcare as they tend to correlate strongly with many other health outcomes.
+
+\newpage
+
+# References
+
+\[1\] *arules package \| R Documentation*. (2012). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/arules/versions/1.6-4
+
+\[2\] *Classifying data using Support Vector Machines(SVMs) in R*. (2018, August 28). GeeksforGeeks.
+
+https://www.geeksforgeeks.org/classifying-data-using-support-vector-machinessvms-in-r/
+
+\[3\] *cmdscale function - RDocumentation*. (n.d.). Www.rdocumentation.org.
+
+https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cmdscale
+
+\[4\] *e1071 package - RDocumentation*. (2024). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/e1071/versions/1.7-16
+
+\[5\]Kottarathil, P. (2020, July 11). Polycystic ovary syndrome (PCOS). Kaggle.
+
+https://www.kaggle.com/datasets/prasoonkottarathil/polycystic-ovary-syndrome-pcos
+
+\[6\]Tierney, N. (2025, April 9). *Quarto for Scientists*. Njtierney.com. https://qmd4sci.njtierney.com/
+
+\[7\]World Health Organization. (2025, February 7). *Polycystic ovary syndrome*. World Health Organization; World Health Organization.
+
+https://www.who.int/news-room/fact-sheets/detail/polycystic-ovary-syndrome
