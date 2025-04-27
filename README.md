@@ -11,5 +11,5 @@ This course is part of the MPS Data Analytics program at Northeastern University
 | [**Week 3**](Module%3/) | Clusters, Association Mining, and Linear Discriminant Analysis | SVM |
 | [**Week 4**](Module%4/) | Text Mining |  |
 | [**Week 5**](Module%5/) | Support Vector Machines |  |
-| [**Week 2**](Final%Project/) | Final Project & Wrap-up |  |
+| [**Week 6**](Final%Project/) | Final Project & Wrap-up |  |
 | [**Practice Files**](Practice%Files/) | Practice File Provided by Instructor |  |
