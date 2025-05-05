@@ -1,0 +1,137 @@
+---
+title: "Module 4 Technique Practice"
+sub: "ALY 6040"
+date: "4 May 2025"
+author: "Jeff Hackmeister"
+format: pdf
+editor: visual
+---
+
+\newpage
+
+## Introduction and Data Exploration
+
+To examine the use of Support Vector Machines for classification methods, we'll be using the Iris dataset from base R to build a predictor for Iris species based on sepal and petal width and length. The dataset contains 150 observations, 50 of each species, and 4 measurement variables.
+
+Support Vector Machines (SVM) are supervised learning models finds a hyper plane to separate the data between classes (Classifying Data Using Support Vector Machines (SVM) in R, 2018).
+
+For this practice, we'll use the four numeric variables in the dataset to create the classification model.
+
+To begin, we will load the necessary libraries and the dataset.
+
+```{r}
+#| message: false
+#| warning: false
+library(e1071)
+library(tidyverse)
+library(GGally)
+data(iris)
+attach(iris)
+```
+
+To confirm the data matches our expectations from the documentation, we will examine the structure of the dataset.
+
+```{r}
+str(iris)
+```
+
+As expected, we have 150 observations of 5 variables. The first four are numeric and the third is a factor with 3 levels. For more detail, we will use the summary function to see the distribution of the numerical data.
+
+```{r}
+summary(iris)
+```
+
+And for a visual exploration of the data, we'll create a box plot.
+
+```{r}
+boxplot(iris[,-5], col = c("coral", "cadetblue", "darkseagreen2", "brown1"))
+```
+
+From this we can see that the data is pretty tightly distributed, and while there are a few outlier observations for sepal width, they are still relatively close to the rest of the data. We will keep this in mind as we go forward with the SVM.
+
+To better understand the correlation between the variables, we will use the ggpairs function to create a pairs plot.
+
+```{r}
+#| message: false
+#| warning: false
+ggpairs(iris, ggplot2::aes(color = Species, alpha = 0.4))
+```
+
+From the scatter plots and the histograms along the bottom row, we can see that petal length and petal width appear to best divide the data by species. This will be helpful for possible refinement of our SVM as we continue.
+
+## Creating the SVM
+
+To build the SVM, we will use the svm function from the e1071 package. By default, we will be using the classification method of an SVM, since we are working with categorical values, and a radial kernel.
+
+```{r}
+model <- svm(Species ~ ., data = iris)
+
+print(model)
+summary(model)
+```
+
+From the summary, we can see that the model produced 51 support vectors, these are the critical observations in the data that are closest to the hyper plane between our categories. Of these 51- 8 support setosa, 22 support versicolor, and 21 support virginica.
+
+To better understand the division in the data, we can plot the model. We will use petal length and width as our axes.
+
+```{r}
+plot(model, data=iris,
+     Petal.Width~Petal.Length,
+     slice = list(Sepal.Width=3, Sepal.Length=4) 
+     )
+```
+
+In the plot, the 51 support vectors are Xs while the other observations are 0s. We can see a clear delineation for the setosas. There is some overlap between versicolor and virginica but these are promising results.
+
+## Predictions
+
+Next, we will use the model to make predictions using the predict function to evaluate the effectiveness of the model.
+
+```{r}
+table(Predicted = predict(model, newdata = iris), 
+      Actual = iris$Species)
+
+```
+
+These are strong results for the model. The original dataset was a even distribution between the three species (50 observations each) and the SVM model correctly identified all 50 setosas, and 48 of each the versicolor and virginica categories. These results match the results from the plot above. Next, we'll take a look at the decision values from the model. These are the mathematical outputs from the prediction and represent the distance from the decision boundary.
+
+```{r}
+pred <- predict(model, iris[, 1:4], decision.values = TRUE)
+attr(pred, "decision.values")[1:4,]
+```
+
+All of the values in the table above are positive, meaning that when choosing between the first and second category, the model always chose the first. The larger values for setosa/versicolor and setosa/virginica indicate higher confidence in those decisions than when choosing between versicolor/virginica. This further validates the findings that there is a clear boundary for setosa, while there is more crossover between virginica and veriscolor.
+
+For another look at the division, we'll use the cdmscale function to flatten the 4-dimensional model (created by 4 different variables) into a 2-dimensional plot.
+
+```{r}
+plot(cmdscale(dist(iris[,-5])),
+     col = as.integer(iris[,5]),
+     pch = c("o","+")[1:150 %in% model$index + 1])
+```
+
+In this plot, the support vectors are marked by a +, while the other observations are shown as o. This plot clearly shows the clear classification of the setosa category and a less clear definition of the others.
+
+## Results and Recommendations
+
+The results of our SVM for classification are quite promising for a relatively small dataset. The overlap between versicolor and virginica does leave considerable room for improvement. The initial dataset only provided 4 variables, it is entirely possible that the introduction of additional variables such as petal color or growing region could produce a even strong classification model. Additionally, including more observations - ideally from a different geographical region - could improve the strength and accurarcy of the classification.
+
+\newpage
+
+## References
+
+\[1\] Classifying data using Support Vector Machines(SVMs) in R. (2018, August 28). GeeksforGeeks.
+
+https://www.geeksforgeeks.org/classifying-data-using-support-vector-machinessvms-in-r/
+
+\[2\] e1071 package - RDocumentation. (2024). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/e1071/versions/1.7-16
+
+\[3\] iris function - RDocumentation. (n.d.). Www.rdocumentation.org.
+
+https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/iris
+
+\[4\] svm function - RDocumentation. (2024). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/e1071/versions/1.7-16/topics/svm
