@@ -1,0 +1,301 @@
+---
+title: "Final Report Draft"
+subtitle: "ALY 6015"
+date: "5 May 2025"
+author: "Janica St Ville and Jeff Hackmeister"
+format: docx
+editor: visual
+---
+
+\newpage
+
+# Introduction
+
+For this project, we will be working with a dataset from Kaggle, the “**Polycystic Ovary Syndrome PCOS”.** This dataset contains health data for 3,000 women and is generated according to the Rotterdam criteria. It sparked our interest because it is a prevalent hormonal disorder that can significantly impact women’s health and quality of life. According to the World Health Organization PCOS represents the leading cause of infertility worldwide and nearly 70% of women go undiagnosed. By better understanding the common characteristics of PCOS patients, medical professionals will be better able to target testing efforts and provide treatment. There is no current cure for PCOS, but there are a variety of treatments available to improve symptoms and increase quality of life.
+
+The goal is to explore how various physiological indicators — such as BMI, hormone levels, and menstrual regularity — relate to the presence of PCOS. I hope to identify patterns that may help in early detection or risk assessment. We will be implementing a Support Vector Machine to predict a PCOS diagnosis from the available variables within the dataset.
+
+## Data Preparation and Exploration
+
+To begin, we will load the data from Kaggle and our needed packages. Once, the data is read in, we'll briefly explore the dataset
+
+```{r}
+#| label: Packages and Data Load
+#| message: false
+#| warning: false
+library(e1071)
+library(arules)
+library(caret)
+library(tidyverse)
+library(patchwork)
+library(corrplot)
+library(GGally)
+data <- read.csv("pcos_rotterdam_balanceado.csv")
+
+str(data)
+```
+
+The data set contains 3,000 records, 6 variables which are variables of interest including: 
+
+-   Age – Age of the individual 
+
+-   BMI – Body Mass Index 
+
+-   Menstrual_Irregularity – Indicator of menstrual Irregularities 
+
+-   Testosterone_Level – measured Testosterone level 
+
+-   Antral_Follicle_count – Count of antral follicles 
+
+-   PCOS_Diagnosis- PCOS diagnosis (likely 0- NO. 1= yes)
+
+This dataset does not contain missing variables, so our data cleaning is minimal. We will shorten the variable names for easy of use in the analysis.
+
+```{r}
+#| label: Data Cleaning 
+data <- data %>%
+  rename(T_Level = Testosterone_Level.ng.dL.,
+         Men_Irrg = Menstrual_Irregularity,
+         AC_Count = Antral_Follicle_Count,
+         PCOS_diag = PCOS_Diagnosis)
+```
+
+To understand the interaction of the variables, we will construct a correlation matrix
+
+```{r}
+#| label: Correlation Matrix
+cormat <- cor(data)
+corrplot(cormat, 
+         method = "color",
+         addCoef.col = "black",
+         tl.col = "black",
+         tl.srt = 45,
+         diag = TRUE)
+```
+
+From this, we can see a very strong correlation between AC count and PCOS, menstrual irregularities and testosterone levels are also strong correlations, while age and BMI so far weaker relationships.
+
+To make analysis easier we'll convert PCOS diagnosis and menstrual irregularities to factor variables with yes/no labels.
+
+```{r}
+#| label: Convert to factor with meaningful labels
+data$PCOS_diag <- factor(data$PCOS_diag, levels = c(0, 1), labels = c("No", "Yes"))
+data$Men_Irrg <- factor(data$Men_Irrg, levels = c(0, 1), labels = c("No", "Yes"))
+head(data)
+```
+
+## Variable Distribution
+
+Next, we'll take a look at the distribution of all the variables in the dataset.
+
+```{r}
+#| label: Variable Distribution
+#| message: false
+#| warning: false
+unique_ages <- seq(min(data$Age) - 0.5, max(data$Age) + 0.5, by = 1)
+age_plot <- ggplot(data, aes(x=Age)) + 
+  geom_histogram(breaks = unique_ages,
+                 fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+bmi_plot <- ggplot(data, aes(x = BMI)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+mi_plot <- ggplot(data, aes(x=Men_Irrg)) +
+  geom_bar(fill = "lightblue")
+
+t_plot <- ggplot(data, aes(x = T_Level)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+ac_plot <- ggplot(data, aes(x = AC_Count)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+pcos_plot <- ggplot(data, aes(x=PCOS_diag)) +
+  geom_bar(fill = "lightblue")
+
+combined_plot <- (age_plot + bmi_plot) / (ac_plot + t_plot) / (mi_plot + pcos_plot) + 
+  plot_layout(guides = "collect")
+
+print(combined_plot)
+```
+
+To better understand the relationship between the variables and a PCOS diagnosis, we'll split the dataset into yes and no groups.
+
+```{r}
+#| label: divide by diagnosis 
+y_diag <- data %>%
+  filter(data$PCOS_diag == "Yes")
+n_diag <- data %>%
+  filter(data$PCOS_diag == "No")
+```
+
+Then will construct a series of plots to see how they interact with the diagnosis.
+
+```{r}
+bmi_pcos <- ggplot(data, aes(x = PCOS_diag, y = BMI, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+ac_pcos <- ggplot(data, aes(x = PCOS_diag, y = AC_Count, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+age_pcos <- ggplot(data, aes(x = PCOS_diag, y = Age, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+t_pcos <- ggplot(data, aes(x = PCOS_diag, y = T_Level, fill= PCOS_diag)) +
+  geom_violin(trim=FALSE) +
+  geom_boxplot(width = 0.3) +
+  theme_minimal()
+
+(age_pcos + bmi_pcos) / (t_pcos + ac_pcos) + 
+  plot_layout(guides = "collect")
+```
+
+This view further illustrates the importance of AC count and testosterone levels in PCOS detection and diagnosis.
+
+# Support Vector Machine
+
+There are several viable classification methodologies for this type of study. Given the current dataset, a decision tree model could be appropriate. However, with the hopes of expanding the study to additional variables and more observations, a support vector machine approach gives more flexibility as complexity increases.
+
+First, we will create the model using the e1701 library and review our results.
+
+```{r}
+#| label: fit the model 
+model <- svm(PCOS_diag ~ ., data = data)
+summary(model)
+```
+
+Now we'll use the model to make predictions on our dataset.
+
+```{r}
+#| label: predictions
+predictions <- predict(model, data)
+head(predictions)
+```
+
+Now that we have predictions, we can take a look at the confusion matrix, which compares the actual PCOS diagnoses to the predictions from our SVM.
+
+```{r}
+#| label: confusion matrix
+table(Actual = data$PCOS_diag, Predicted = predictions)
+```
+
+This shows very strong predictive strength for the model with only 1 false positive and 2 false negatives. To further examine the strength of the model, we'll partition the dataset into training and test sets.
+
+```{r}
+#| label: data partitioning 
+set.seed(123) 
+train_index <- createDataPartition(data$PCOS_diag, p = 0.7, list = FALSE)
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+```
+
+With these new datasets, we'll refit the model and test our results.
+
+```{r}
+#| label: SVM with training data
+model_train <- svm(PCOS_diag ~ ., data = train_data)
+test_pred <- predict(model_train, test_data)
+confusionMatrix(test_pred, test_data$PCOS_diag)
+```
+
+Once again, we see very strong results for the model, with 99.67% accuracy and a 95% confidence interval of 99.03 to 99.93%. There were also only 2 false negatives in this test - which is very important for this particular subject matter.
+
+## Visualizations
+
+Next, we will use the dist function from arules to create a distance matrix. This measures the distance between the data points in a multidimensional space. To do so, we must first limit the data to only numerical values. Once we have those distances calculated, we’ll use the cmdscale function to convert those values into 2D coordinates that we can plot.
+
+```{r}
+#| Label: distance matrix visualizations 
+# Extract only numeric columns for distance calculation
+numeric_features <- data[, sapply(data, is.numeric)]
+# Create distance matrix
+dist_matrix <- dist(numeric_features)
+# Apply MDS to get 2D coordinates
+mds_coords <- cmdscale(dist_matrix)
+```
+
+And then we will visualize the results
+
+```{r fig.width=10, fig.height=8, fig.fullwidth=TRUE}
+#| label: plot the results
+par(mar = c(2, 2, 2, 2), xaxt = 'n', yaxt = 'n')
+plot(mds_coords,
+     col = as.integer(data$PCOS_diag),
+     pch = c("o", "+")[1:nrow(data) %in% model$index + 1],
+     main = "SVM Classification of PCOS Diagnosis",
+     xlab = "", ylab = "")  # This removes the axis labels
+legend("bottomright",
+     legend = c("Non-PCOS", "PCOS", "Regular Point", "Support Vector"),
+     col = c(1, 2, 1, 1),
+     pch = c("o", "o", "o", "+"),
+     cex = 0.8)
+```
+
+The resulting plot shows the distribution of the observations from the dataset. Positive diagnoses are in red, while negatives are in black. The 64 support vectors identified in the model are indicated by a + while the other observations are shown with a o. Despite the strong results we saw in the model above, there is not as clean of a delineation in the data from this plot. To look for a cleaner separation, we’ll look at each of the variable pairs independently.
+
+```{r fig.width=12, fig.height=12, fig.fullwidth=TRUE, warning=FALSE, message=FALSE}
+plot_data <- cbind(numeric_features, PCOS_diag = data$PCOS_diag)
+ggpairs(plot_data, 
+        columns = 1:(ncol(plot_data)-1),
+        mapping = ggplot2::aes(color = PCOS_diag),
+        upper = list(continuous = "points"),
+        lower = list(continuous = "points"),
+        diag = list(continuous = "densityDiag"),
+        progress = FALSE) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 8),
+    strip.text = element_text(size = 10),
+    legend.position = "bottom"
+  ) +
+  labs(title = "Relationships Between Features by PCOS Diagnosis")
+```
+
+This gives us a much better view into which variable combination provides the best distinction in diagnosis outcomes. Age has the weakest predictive influence, while BMI, testosterone and AC count produce much cleaner results.
+
+# Concussion
+
+The results of our SVM model were very strong, indicating that these variables are highly useful in predicting a PCOS diagnosis. Age appears to be of limited use in the model, which makes some logical sense given the relatively narrow age band included in a study of reproductive adult women, 18 to 44 in this dataset. Ideally, we could use this model on a new dataset collected from a different geographical area to test the effectiveness on different demographic samples. It would also be quite helpful to add additional demographic variables such as race, socioeconomic status, and access to regular healthcare as they tend to correlate strongly with many other health outcomes.
+
+\newpage
+
+# References
+
+\[1\] *arules package \| R Documentation*. (2012). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/arules/versions/1.6-4
+
+\[2\] Christ, J. P., & Cedars, M. I. (2023). Current Guidelines for Diagnosing PCOS. *Diagnostics*, *13*(6), 1113. https://doi.org/10.3390/diagnostics13061113
+
+\[3\] *Classifying data using Support Vector Machines(SVMs) in R*. (2018, August 28). GeeksforGeeks.
+
+https://www.geeksforgeeks.org/classifying-data-using-support-vector-machinessvms-in-r/
+
+\[4\] *cmdscale function - RDocumentation*. (n.d.). Www.rdocumentation.org.
+
+https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cmdscale
+
+\[5\] *e1071 package - RDocumentation*. (2024). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/e1071/versions/1.7-16
+
+\[6\] Soares, L. S. (2025). *Polycystic Ovary Syndrome PCOS*. Kaggle.com. https://www.kaggle.com/datasets/lucass0s0/polycystic-ovary-syndrome-pcos/data
+
+\[7\] Tierney, N. (2025, April 9). *Quarto for Scientists*. Njtierney.com. https://qmd4sci.njtierney.com/
+
+\[8\] World Health Organization. (2025, February 7). *Polycystic ovary syndrome*. World Health Organization; World Health Organization.
+
+https://www.who.int/news-room/fact-sheets/detail/polycystic-ovary-syndrome
