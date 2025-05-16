@@ -1,0 +1,173 @@
+---
+title: "Module 5 Text Mining Practice"
+subtitle: "ALY 6040"
+date: "5 May 2024"
+author: "Jeff Hackmeister"
+format: pdf
+editor: visual
+---
+
+\newpage
+
+# Introduction 
+
+To demonstrate the ability within in R to extract meaningful data from text resources, we'll be using the famous *I Have a Dream* speech, delivered by Martin Luther King, Jr. on August 28th, 1963 in Washington, DC.
+
+To conduct the analysis, we will utilize several packages from R.
+
+```{r}
+#| message: false
+#| warning: false
+library("tm")
+library("SnowballC")
+library("wordcloud")
+library("RColorBrewer")
+```
+
+The tm package allows for text mining through the use of memory objects called corpora. The SnowballC package allows for word stemming, which collapses words to their root word for better data analysis and comparison. Finally wordcloud and RColorBrewer are visualization packages that will help create visual representations of the analysis conducted.
+
+Once our packages are installed and loaded, we can read in the text of the speech.
+
+```{r}
+filePath <- "http://www.sthda.com/sthda/RDoc/example-files/martin-luther-king-i-have-a-dream-speech.txt"
+text <- readLines(filePath)
+```
+
+Next, we'll convert the text into a corpus for use in analysis.
+
+```{r}
+docs <- Corpus(VectorSource(text))
+
+inspect(docs)
+```
+
+# Data Preparation 
+
+We now have the entirety of the speech available for analysis. As seen in the print out above, our corpus contains every word of the speech, and while preserving the text of a historically significant speech is important, many alterations can be made to prepare the test for analysis.
+
+As with any data analysis, the next steps are to prepare and clean the data. We'll utilize the content_transformer function from tm to remove any special characters from the text data and replace them with spaces. This will make further analysis easier and more effective.
+
+```{r}
+#| message: false
+#| warning: false
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+docs <- tm_map(docs, toSpace, "/")
+docs <- tm_map(docs, toSpace, "@")
+docs <- tm_map(docs, toSpace, "\\|")
+```
+
+Next, we will convert all text to lower case and remove any numbers from the text using the tm_map function.
+
+```{r}
+#| message: false
+#| warning: false
+# Convert the text to lower case
+docs <- tm_map(docs, content_transformer(tolower))
+# Remove numbers
+docs <- tm_map(docs, removeNumbers)
+```
+
+Next, we'll use the tm package to remove what are referred to as stopwords, or filler words in English that have high usage but don't provide much analytic value.
+
+```{r}
+#| message: false
+#| warning: false
+docs <- tm_map(docs, removeWords, stopwords("english"))
+```
+
+We continue the cleaning process by removing punctuation and white spaces in the text.
+
+```{r}
+#| message: false
+#| warning: false
+# Remove punctuations
+docs <- tm_map(docs, removePunctuation)
+# Eliminate extra white spaces
+docs <- tm_map(docs, stripWhitespace)
+```
+
+And finally, we'll reduce the remaining words in the text to their root by using the stemDocument call.
+
+```{r}
+#| warning: false
+docs <- tm_map(docs, stemDocument)
+```
+
+# Analysis
+
+With our text cleaned and prepped, we can run a meaningful analysis. We will create a term document matrix which will show the frequency of each word in our text and we'll sort it in descending order so the most frequently used words will be at the top. This illustrates the importance of the previous cleaning techniques as words like "a" and "the" have been removed and by stemming the text, various expressions of a root word will be grouped together.
+
+```{r}
+dtm <- TermDocumentMatrix(docs)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+```
+
+Now that we have our matrix, we can generate a world cloud. We'll use setseed to ensure our work can be reproduced and then use the wordcloud function to create a word cloud where the most commonly used words are centered and larger that others. We'll also limit the cloud to the top 200 words and use rot.per at 0.35 to indicate that 35% of the words will be vertical, this keeps the cloud more concentrated. Finally, we'll use the RColorBrewer Dark2 color package to add colors for the most frequently appearing words in the speech.
+
+```{r}
+#| message: false
+#| warning: false
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+We can also use the findFreqTerms function to produce a list of words that appear at least a stated number of times. For example, we'll look at all words appearing at least 4 times.
+
+```{r}
+findFreqTerms(dtm, lowfreq = 4)
+```
+
+We can also look at corelations between words by using the findAssocs function. Here we will limit the results to works with a correlation of at least 0.3.
+
+```{r}
+
+findAssocs(dtm, terms = "freedom", corlimit = 0.3)
+```
+
+Finally, we return to our matrix of most frequently used words and create a bar chart of the top 10.
+
+```{r}
+head(d, 10)
+```
+
+```{r}
+barplot(d[1:10,]$freq, las = 2, names.arg = d[1:10,]$word,
+        col ="lightblue", main ="Most frequent words",
+        ylab = "Word frequencies")
+```
+
+# Conclusion
+
+Text mining reveals the hidden patterns within narrative data that quantitative analysis alone cannot capture. In this work we've demonstrated how unstructured textual information can be transformed into actionable insights through systematic processing and visualization.
+
+Utilizing both the tm and SnowballC packages for preprocessing and cleaning, we were able to find patterns in word choice in the *I Have a Dream* speech. While the wordcloud visualizations provided an intuitive representation of concept prominence.
+
+Moving forward, these techniques could be further expanded by implementing more advanced natural language processing methods such as topic modeling or sentiment analysis to extract even deeper insights from narrative data. Text mining thus serves not just as a supplementary tool, but as an essential component in comprehensive data analysis frameworks where human expression adds critical context to quantitative findings.
+
+\newpage
+
+# References
+
+\[1\] *RColorBrewer package - RDocumentation*. (2022). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-3‌
+
+\[2\] *SnowballC package - RDocumentation*. (2023). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/SnowballC/versions/0.7.1
+
+\[3\] *tm package - RDocumentation*. (2025). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/tm/versions/0.7-16
+
+‌‌\[4\] *wordcloud package - RDocumentation*. (2018). Rdocumentation.org.
+
+https://www.rdocumentation.org/packages/wordcloud/versions/2.6
+
+‌

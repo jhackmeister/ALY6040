@@ -1,0 +1,155 @@
+---
+title: "Final Project EDA"
+subtitle: "ALY 6015"
+date: "24 February 2025"
+author: "Janica St Ville and Jeff Hackmeister"
+format: docx
+editor: visual
+---
+
+\newpage
+
+# Introduction
+
+For this project, we will be working with a dataset we discovered on Kaggle – The “**Polycystic Ovary Syndrome PCOS”.** This dataset speaks about women with Polycystic Ovary Syndrome and is generated according to the Rotterdam criteria. It sparked our interest because it is a prevalent hormonal disorder that can significantly impact women’s health and quality of life. 
+
+The goal is to explore how various physiological indicators — such as BMI, hormone levels, and menstrual regularity — relate to the presence of PCOS. I hope to identify patterns that may help in early detection or risk assessment. 
+
+To begin the analysis, we will first load in the data from Kaggle and explore the structure of the dataset.
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+library(patchwork)
+# read in CSV from https://www.kaggle.com/datasets/lucass0s0/polycystic-ovary-syndrome-pcos
+data <- read.csv("pcos_rotterdam_balanceado.csv")
+
+str(data)
+```
+
+The data set contains 3,000 records, 6 variables which are variables of interest including: 
+
+Age – Age of the individual 
+
+BMI – Body Mass Index 
+
+Menstrual_Irregularity – Indicator of menstrual Irregularities 
+
+Testosterone_Level – measured Testosterone level 
+
+Antral_Follicle_count – Count of antral follicles 
+
+PCOS_Diagnosis- PCOS diagnosis (likely 0- NO. 1= yes).
+
+## Data Cleaning
+
+First , we will check for missing values.
+
+```{r}
+colSums(is.na(data))
+```
+
+To make further analysis easier, we will change the Menstrual_Irregularity and PCOS_Diagnosis variables to a factors, as well as shorten the longer variable names.
+
+```{r}
+# Convert to factor with meaningful labels
+data$PCOS_Diagnosis <- factor(data$PCOS_Diagnosis, levels = c(0, 1), labels = c("No", "Yes"))
+
+data$Menstrual_Irregularity <- factor(data$Menstrual_Irregularity, levels = c(0, 1), labels = c("No", "Yes"))
+
+data <- data %>%
+  rename(T_Level = Testosterone_Level.ng.dL.,
+         Men_Irrg = Menstrual_Irregularity,
+         AC_Count = Antral_Follicle_Count,
+         PCOS_diag = PCOS_Diagnosis)
+
+head(data)
+```
+
+To better compare outcomes further in the analysis, we'll split the dataset by the diagnosis variable.
+
+```{r}
+y_diag <- data %>%
+  filter(data$PCOS_diag == "Yes")
+n_diag <- data %>%
+  filter(data$PCOS_diag == "No")
+```
+
+## Variable Distribution
+
+We will be investigating the relationship between the variables and a PCOS diagnosis, it is important to understand the distributions of each variable. W
+
+```{r}
+#| message: false
+#| warning: false
+unique_ages <- seq(min(data$Age) - 0.5, max(data$Age) + 0.5, by = 1)
+age_plot <- ggplot(data, aes(x=Age)) + 
+  geom_histogram(breaks = unique_ages,
+                 fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+bmi_plot <- ggplot(data, aes(x = BMI)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+mi_plot <- ggplot(data, aes(x=Men_Irrg)) +
+  geom_bar(fill = "lightblue")
+
+t_plot <- ggplot(data, aes(x = T_Level)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+ac_plot <- ggplot(data, aes(x = AC_Count)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+pcos_plot <- ggplot(data, aes(x=PCOS_diag)) +
+  geom_bar(fill = "lightblue")
+
+combined_plot <- (age_plot + bmi_plot) / (ac_plot + t_plot) / (mi_plot + pcos_plot) + 
+  plot_layout(guides = "collect")
+
+print(combined_plot)
+```
+
+From this we can see a fairly even distribution of ages between 18 and 44, with a slight skew towards the younger ages. The BMI plot produces a mostly normal distribution curve, albeit with a slightly longer tail to the right. The AC count is very left skewed, peaking around 5 and a large drop after 11. Testosterone levels also produced a left skewed distribution with a spike around 50 and a long tale extending well past 100. In the final two plots, you can see the split between the two factor variable.
+
+To take a closer look at the two left skewed variable, we'll look at their distributions by diagnosis as well.
+
+```{r}
+#| message: false
+#| warning: false
+t_plot_y <- ggplot(y_diag, aes(x = T_Level)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+ac_plot_y <- ggplot(y_diag, aes(x = AC_Count)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+t_plot_n <- ggplot(n_diag, aes(x = T_Level)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+ac_plot_n <- ggplot(n_diag, aes(x = AC_Count)) +
+  geom_histogram(fill = "lightblue",
+                 color = "black") +
+  theme_minimal()
+
+(ac_plot_n + t_plot_n) / (ac_plot_y + t_plot_y) + 
+  plot_layout(guides = "collect")
+```
+
+\newpage
+
+# References
+
+Kottarathil, P. (2020, July 11). Polycystic ovary syndrome (PCOS). Kaggle. https://www.kaggle.com/datasets/prasoonkottarathil/polycystic-ovary-syndrome-pcos

@@ -270,6 +270,8 @@ This gives us a much better view into which variable combination provides the be
 
 The results of our SVM model were very strong, indicating that these variables are highly useful in predicting a PCOS diagnosis. Age appears to be of limited use in the model, which makes some logical sense given the relatively narrow age band included in a study of reproductive adult women, 18 to 44 in this dataset. Ideally, we could use this model on a new dataset collected from a different geographical area to test the effectiveness on different demographic samples. It would also be quite helpful to add additional demographic variables such as race, socioeconomic status, and access to regular healthcare as they tend to correlate strongly with many other health outcomes.
 
+The strong results seen from the testing does lead to a concern around over fitting for the model. Adding additional observations and variables to the model would allow for better refinement of the model and the ability to hone in on the most consequential variables at play in the diagnosis and eventual treatment of PCOS in women around the world.
+
 \newpage
 
 # References
